@@ -37,6 +37,28 @@ function isDigit(value) {
   return value >= "0" && value <= "9";
 }
 
+function isNegative(value) {
+  return value === "-";
+}
+
+function isFloat(value) {
+  if (value === ".") {
+    if (currentNumber.includes(".")) return;
+
+    if (currentNumber === "") {
+      currentNumber = "0.";
+    } else {
+      currentNumber += ".";
+    }
+
+    display.textContent = currentNumber;
+  }
+}
+
+function isSquareRoot(value) {
+  return value === "√";
+}
+
 function isOperator(operator) {
   return (
     operator === "+" || operator === "-" || operator === "×" || operator === "÷"
@@ -44,11 +66,8 @@ function isOperator(operator) {
 }
 
 let currentNumber = "";
-
-function updateNumber(number) {
-  currentNumber += number;
-  return Number(currentNumber);
-}
+let lastNumber = null;
+let currentOperator = null;
 
 const display = document.querySelector("#display");
 const buttons = document.querySelectorAll(".button");
@@ -57,26 +76,53 @@ buttons.forEach((button) => {
   button.addEventListener("click", () => {
     let value = button.textContent;
 
-    if (isDigit(value)) {
-      updateNumber(value);
+    if (isDigit(value) || isFloat(value)) {
+      currentNumber += value;
       display.textContent = currentNumber;
     }
 
-    let operator = button.textContent;
-    if (isOperator(operator)) {
-      // Наразі число виконує діє лише з самим собою
-      // Треба визначити як зберігати останнє значення та виконувати операції з теперішнім значенням
-      display.textContent = operate(
-        operator,
-        Number(currentNumber),
-        Number(currentNumber),
-      );
+    if (isNegative(value) && currentNumber === "") {
+      currentNumber = "-";
+      return;
+    }
+
+    if (isOperator(value)) {
+      lastNumber = Number(currentNumber);
+      currentOperator = value;
+      currentNumber = "";
+
+      display.textContent = currentOperator;
+    }
+
+    if (isSquareRoot(value)) {
+      currentNumber = String(Math.sqrt(Number(currentNumber)));
+      display.textContent = currentNumber;
+    }
+
+    if (value === "=") {
+      result();
+    }
+
+    if (value === "C") {
+      lastNumber = null;
+      currentNumber = "";
+      currentOperator = null;
+
+      display.textContent = "";
     }
   });
 });
 
-console.log(add(4, 3));
-console.log(subtract(4, 3));
-console.log(multiply(4, 3));
-console.log(divide(4, 3));
-console.log(operate("+", 1, 2));
+function result() {
+  const result = operate(
+    currentOperator,
+    Number(lastNumber),
+    Number(currentNumber),
+  );
+
+  display.textContent = result;
+
+  lastNumber = null;
+  currentNumber = String(result);
+  currentOperator = null;
+}
