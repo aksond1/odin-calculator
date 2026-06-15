@@ -11,6 +11,9 @@ function multiply(a, b) {
 }
 
 function divide(a, b) {
+  if (b === 0) {
+    alert("Bro really tried to divide by 0 xdd");
+  }
   return a / b;
 }
 
@@ -42,21 +45,19 @@ function isNegative(value) {
 }
 
 function isFloat(value) {
-  if (value === ".") {
-    if (currentNumber.includes(".")) return;
+  return value === ".";
+}
 
-    if (currentNumber === "") {
-      currentNumber = "0.";
-    } else {
-      currentNumber += ".";
-    }
-
-    display.textContent = currentNumber;
-  }
+function isPercent(value) {
+  return value === "%";
 }
 
 function isSquareRoot(value) {
   return value === "√";
+}
+
+function isToggleSign(value) {
+  return value === "+/-";
 }
 
 function isOperator(operator) {
@@ -69,6 +70,9 @@ let currentNumber = "";
 let lastNumber = null;
 let currentOperator = null;
 
+let reset = false;
+let operatorPressed = false;
+
 const display = document.querySelector("#display");
 const buttons = document.querySelectorAll(".button");
 
@@ -77,7 +81,28 @@ buttons.forEach((button) => {
     let value = button.textContent;
 
     if (isDigit(value) || isFloat(value)) {
+      if (reset) {
+        currentNumber = "";
+        reset = false;
+      }
+
+      operatorPressed = false;
       currentNumber += value;
+      display.textContent = currentNumber;
+    }
+
+    if (isFloat(value)) {
+      if (currentNumber.includes(".")) return;
+
+      if (reset) {
+        currentNumber = "0.";
+        reset = false;
+      } else if (currentNumber === "") {
+        currentNumber = "0.";
+      } else {
+        currentNumber += ".";
+      }
+
       display.textContent = currentNumber;
     }
 
@@ -86,12 +111,45 @@ buttons.forEach((button) => {
       return;
     }
 
+    if (isPercent(value)) {
+      if (lastNumber !== null) {
+        currentNumber = String((lastNumber * Number(currentNumber)) / 100);
+      } else {
+        currentNumber = String(Number(currentNumber) / 100);
+      }
+      display.textContent = currentNumber;
+    }
+
+    if (isToggleSign(value) && currentNumber !== "") {
+      currentNumber = String(-Number(currentNumber));
+    }
+
     if (isOperator(value)) {
-      lastNumber = Number(currentNumber);
+      if (operatorPressed && currentNumber === "") {
+        currentOperator = value;
+        return;
+      }
+
+      operatorPressed = true;
+
+      if (currentNumber === "" && lastNumber === null) {
+        currentOperator = value;
+        return;
+      }
+
+      if (lastNumber !== null && currentNumber !== "") {
+        lastNumber = operate(
+          currentOperator,
+          lastNumber,
+          Number(currentNumber),
+        );
+        display.textContent = lastNumber;
+      } else if (currentNumber !== "") {
+        lastNumber = Number(currentNumber);
+      }
+
       currentOperator = value;
       currentNumber = "";
-
-      display.textContent = currentOperator;
     }
 
     if (isSquareRoot(value)) {
@@ -100,6 +158,8 @@ buttons.forEach((button) => {
     }
 
     if (value === "=") {
+      reset = true;
+      operatorPressed = false;
       result();
     }
 
@@ -107,6 +167,7 @@ buttons.forEach((button) => {
       lastNumber = null;
       currentNumber = "";
       currentOperator = null;
+      operatorPressed = false;
 
       display.textContent = "";
     }
@@ -114,13 +175,17 @@ buttons.forEach((button) => {
 });
 
 function result() {
+  if (currentOperator === null || currentNumber === "" || lastNumber === null) {
+    return;
+  }
+
   const result = operate(
     currentOperator,
     Number(lastNumber),
     Number(currentNumber),
   );
 
-  display.textContent = result;
+  display.textContent = Number(result.toFixed(10));
 
   lastNumber = null;
   currentNumber = String(result);
